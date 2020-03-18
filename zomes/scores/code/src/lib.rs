@@ -2,7 +2,9 @@
 
 extern crate hdk;
 use hdk::prelude::*;
+use hdk::AGENT_ADDRESS;
 use hdk_proc_macros::zome;
+// use holochain_anchors;
 // #[macro_use]
 // extern crate hdk;
 // extern crate serde;
@@ -17,11 +19,7 @@ use hdk_proc_macros::zome;
 // use hdk::holochain_core_types::{dna::entry_types::Sharing, entry::Entry};
 // use hdk::{entry_definition::ValidatingEntryType, error::ZomeApiResult};
 
-// use hdk::holochain_persistence_api::cas::content::Address;
-
 // use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-
-use holochain_anchors;
 
 // see https://developer.holochain.org/api/0.0.42-alpha5/hdk/ for info on using the hdk library
 
@@ -30,7 +28,7 @@ use holochain_anchors;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Profile {
-    content: String,
+    name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
@@ -52,10 +50,21 @@ fn profile_definition() -> ValidatingEntryType {
         validation_package: || {
             hdk::ValidationPackageDefinition::Entry
         },
-
         validation: | _validation_data: hdk::EntryValidationData<Profile>| {
             Ok(())
-        }
+        },
+        links: [
+            from!(
+                "%agent_id",
+                link_type: "agent->profile",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+                validation: | _validation_data: hdk::LinkValidationData| {
+                    Ok(())
+                }
+            )
+        ]
     )
 }
 fn score_definition() -> ValidatingEntryType {
@@ -72,7 +81,11 @@ fn score_definition() -> ValidatingEntryType {
         }
     )
 }
-
+impl Profile {
+    fn entry(self) -> Entry {
+        Entry::App("profile".into(), self.into())
+    }
+}
 #[zome]
 mod scores {
     #[init]
@@ -93,19 +106,50 @@ mod scores {
     fn score_entry_def() -> ValidatingEntryType {
         score_definition()
     }
+    /*
+    #[zome_fn("hc_public")]
+    fn get_user_scores(addr: Address) -> ZomeApiResult<Vec<Score>> {
+        // get scores linked from a generic user
 
+    }
     #[zome_fn("hc_public")]
-    fn get_user_scores(addr: Address) -> ZomeApiResult<Vec<Score>> {}
+    fn get_my_scores() -> ZomeApiResult<Vec<Score>> {
+        // get scores linked from the user
+    }
     #[zome_fn("hc_public")]
-    fn get_my_scores() -> ZomeApiResult<Vec<Score>> {}
+    fn get_all_scores() -> ZomeApiResult<Vec<Score>> {
+        // get scores linked from the anchor
+    }
     #[zome_fn("hc_public")]
-    fn get_all_scores() -> ZomeApiResult<Vec<Score>> {}
+    fn get_score_details(addr: Address) -> ZomeApiResult<AmpedScore> {
+        // get an amped score given a regular score
+    }
     #[zome_fn("hc_public")]
-    fn get_score_details(addr: Address) -> ZomeApiResult<AmpedScore> {}
+    fn publish_score(points: i32, msg: String) -> ZomeApiResult<bool> {
+        // upload a score, link from the anchor and link from the user
+    }
+    */
     #[zome_fn("hc_public")]
-    fn publish_score(points: i32, msg: String) -> ZomeApiResult<bool> {}
+    fn profile(name: String) -> ZomeApiResult<Address> {
+        // create my profile
+        let profile = Profile { name };
+        let entry = profile.entry();
+        let address = hdk::commit_entry(&entry)?;
+        hdk::link_entries(&AGENT_ADDRESS, &address, "agent->profile", "")?;
+        Ok(address)
+    }
     #[zome_fn("hc_public")]
-    fn profile(name: String) -> ZomeApiResult<Profile> {}
-    #[zome_fn("hc_public")]
-    fn get_my_profile() -> ZomeApiResult<Profile> {}
+    fn get_my_profile() -> ZomeApiResult<Profile> {
+        //fetch profile linked from the agent address
+        let mut res = hdk::utils::get_links_and_load_type(
+            &AGENT_ADDRESS,
+            LinkMatch::Exactly("agent->profile"),
+            LinkMatch::Any,
+        )?;
+
+        match res.pop() {
+            Some(profile) => Ok(profile),
+            None => Err(ZomeApiError::Internal("No profile registered".to_string())),
+        }
+    }
 }
