@@ -11,7 +11,7 @@ serde_derive = "1.0"
 hdk = "=0.0.42-alpha5"
 holochain_wasm_utils = "=0.0.42-alpha5"
 holochain_json_derive = "0.0"
-holochain_anchors= "0.2.1"
+holochain_anchors = { git = "https://github.com/holochain/holochain_anchors" }
 hdk_proc_macros = "0.0.42-alpha5"
 
 [lib]

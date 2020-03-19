@@ -35,20 +35,20 @@ const dna = Config.dna(dnaPath, 'scaffold-test')
 const conductorConfig = Config.gen({myInstanceName: dna})
 
 orchestrator.registerScenario("description of example test", async (s, t) => {
-
   const {alice, bob} = await s.players({alice: conductorConfig, bob: conductorConfig}, true)
+  return
 
   // Make a call to a Zome function
   // indicating the function, and passing it an input
-  const addr = await alice.call("myInstanceName", "my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
+  const shouldBeEmpty = await alice.call("myInstanceName", "scores", "get_my_profile", {})
 
+  console.log('sbe: ',shouldBeEmpty)
   // Wait for all network activity to settle
   await s.consistency()
 
-  const result = await bob.call("myInstanceName", "my_zome", "get_my_entry", {"address": addr.Ok})
 
   // check for equality of the actual and expected results
-  t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
+  // t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
 })
 
 orchestrator.run()

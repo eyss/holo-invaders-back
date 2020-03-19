@@ -31,14 +31,30 @@ pub struct Profile {
     name: String,
 }
 
+impl Profile {
+    fn entry(self) -> Entry {
+        Entry::App("profile".into(), self.into())
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Score {
     content: String,
+    message: String,
+    author_address: Address,
 }
+
+impl Score {
+    fn entry(self) -> Entry {
+        Entry::App("score".into(), self.into())
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct AmpedScore {
     content: String,
-    author_address: String,
+    message: String,
+    author_address: Address,
     author_username: String,
 }
 
@@ -75,16 +91,33 @@ fn score_definition() -> ValidatingEntryType {
         validation_package: || {
             hdk::ValidationPackageDefinition::Entry
         },
-
         validation: | _validation_data: hdk::EntryValidationData<Score>| {
             Ok(())
-        }
+        },
+        links: [
+            from!(
+                "%agent_id",
+                link_type: "agent->profile",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+                validation: | _validation_data: hdk::LinkValidationData| {
+                    Ok(())
+                }
+            ),
+            from!(
+                holochain_anchors::ANCHOR_TYPE,
+                link_type: "anchor->score",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+
+                validation: |_validation_data: hdk::LinkValidationData| {
+                    Ok(())
+                }
+            )
+        ]
     )
-}
-impl Profile {
-    fn entry(self) -> Entry {
-        Entry::App("profile".into(), self.into())
-    }
 }
 #[zome]
 mod scores {
@@ -106,29 +139,78 @@ mod scores {
     fn score_entry_def() -> ValidatingEntryType {
         score_definition()
     }
-    /*
+    #[entry_def]
+    fn anchor_def() -> ValidatingEntryType {
+        holochain_anchors::anchor_definition()
+    }
     #[zome_fn("hc_public")]
     fn get_user_scores(addr: Address) -> ZomeApiResult<Vec<Score>> {
         // get scores linked from a generic user
-
+        let res = hdk::utils::get_links_and_load_type(
+            &addr,
+            LinkMatch::Exactly("agent->score"),
+            LinkMatch::Any,
+        )?;
+        Ok(res)
     }
     #[zome_fn("hc_public")]
     fn get_my_scores() -> ZomeApiResult<Vec<Score>> {
         // get scores linked from the user
+        let res = hdk::utils::get_links_and_load_type(
+            &AGENT_ADDRESS,
+            LinkMatch::Exactly("agent->score"),
+            LinkMatch::Any,
+        )?;
+        Ok(res)
     }
     #[zome_fn("hc_public")]
     fn get_all_scores() -> ZomeApiResult<Vec<Score>> {
         // get scores linked from the anchor
+        let anchor_address = holochain_anchors::anchor("score".into(), "score".into())?;
+        hdk::utils::get_links_and_load_type(
+            &anchor_address,
+            LinkMatch::Exactly("anchor->score"),
+            LinkMatch::Any,
+        )
     }
     #[zome_fn("hc_public")]
     fn get_score_details(addr: Address) -> ZomeApiResult<AmpedScore> {
         // get an amped score given a regular score
+        let score: Score = hdk::utils::get_as_type(addr)?;
+        let wrapped_profile_array: Vec<Profile> = hdk::utils::get_links_and_load_type(
+            &score.author_address,
+            LinkMatch::Exactly("agent->profile"),
+            LinkMatch::Any,
+        )?;
+        let wrapped_profile = wrapped_profile_array.last();
+        let author_profile: &Profile = match wrapped_profile {
+            Some(profile) => profile,
+            None => {
+                return Err(ZomeApiError::Internal("profile not found".to_string()));
+            }
+        };
+        let result = AmpedScore {
+            content: score.content.clone(),
+            message: score.message.clone(),
+            author_address: score.author_address.clone(),
+            author_username: author_profile.name.clone(),
+        };
+        Ok(result)
     }
     #[zome_fn("hc_public")]
-    fn publish_score(points: i32, msg: String) -> ZomeApiResult<bool> {
+    fn publish_score(content: String, message: String) -> ZomeApiResult<bool> {
         // upload a score, link from the anchor and link from the user
+        let score = Score {
+            content,
+            message,
+            author_address: AGENT_ADDRESS.clone(),
+        };
+        let entry = score.entry();
+        let address = hdk::commit_entry(&entry)?;
+        let anchor_address = holochain_anchors::anchor("score".into(), "score".into())?;
+        hdk::link_entries(&anchor_address, &address, "my_link_type", "my_anchor")?;
+        Ok(true)
     }
-    */
     #[zome_fn("hc_public")]
     fn profile(name: String) -> ZomeApiResult<Address> {
         // create my profile
