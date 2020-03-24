@@ -97,7 +97,7 @@ fn score_definition() -> ValidatingEntryType {
         links: [
             from!(
                 "%agent_id",
-                link_type: "agent->profile",
+                link_type: "agent->score",
                 validation_package: || {
                     hdk::ValidationPackageDefinition::Entry
                 },
@@ -208,7 +208,8 @@ mod scores {
         let entry = score.entry();
         let address = hdk::commit_entry(&entry)?;
         let anchor_address = holochain_anchors::anchor("score".into(), "score".into())?;
-        hdk::link_entries(&anchor_address, &address, "my_link_type", "my_anchor")?;
+        hdk::link_entries(&anchor_address, &address, "anchor->score", "")?;
+        hdk::link_entries(&AGENT_ADDRESS, &address, "agent->score", "")?;
         Ok(true)
     }
     #[zome_fn("hc_public")]

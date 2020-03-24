@@ -1,54 +1,68 @@
 /// NB: The tryorama config patterns are still not quite stabilized.
 /// See the tryorama README [https://github.com/holochain/tryorama]
 /// for a potentially more accurate example
+const path = require("path");
+const {
+  Orchestrator,
+  Config,
+  combine,
+  localOnly,
+  tapeExecutor
+} = require("@holochain/tryorama");
 
-const path = require('path')
-
-const { Orchestrator, Config, combine, singleConductor, localOnly, tapeExecutor } = require('@holochain/tryorama')
-
-process.on('unhandledRejection', error => {
+process.on("unhandledRejection", error => {
   // Will print "unhandledRejection err is not defined"
-  console.error('got unhandledRejection:', error);
+  console.error("got unhandledRejection:", error);
 });
 
-const dnaPath = path.join(__dirname, "../dist/holo-invaders.dna.json")
+const dnaPath = path.join(__dirname, "../dist/holo-invaders-back.dna.json");
 
 const orchestrator = new Orchestrator({
   middleware: combine(
     // use the tape harness to run the tests, injects the tape API into each scenario
     // as the second argument
-    tapeExecutor(require('tape')),
+    tapeExecutor(require("tape")),
 
     // specify that all "players" in the test are on the local machine, rather than
     // on remote machines
-    localOnly,
+    localOnly
+  )
+});
 
-    // squash all instances from all conductors down into a single conductor,
-    // for in-memory testing purposes.
-    // Remove this middleware for other "real" network types which can actually
-    // send messages across conductors
-    singleConductor,
-  ),
-})
+const dna = Config.dna(dnaPath, "scores");
+const config = Config.gen(
+  {
+    scores: dna
+  },
+  {
+    network: {
+      type: "sim2h",
+      sim2h_url: "ws://localhost:9000"
+    }
+  }
+);
 
-const dna = Config.dna(dnaPath, 'scaffold-test')
-const conductorConfig = Config.gen({myInstanceName: dna})
 
-orchestrator.registerScenario("description of example test", async (s, t) => {
-  const {alice, bob} = await s.players({alice: conductorConfig, bob: conductorConfig}, true)
-  return
+orchestrator.registerScenario("create fligth segment", async (s, t) => {
+  const { alice } = await s.players({ alice: config }, true);
+  const result = await alice.call(
+    "scores",
+    "scores",
+    "profile",
+    { name: "hector0513" }
+  );
+  t.ok(result.Ok);
 
-  // Make a call to a Zome function
-  // indicating the function, and passing it an input
-  const shouldBeEmpty = await alice.call("myInstanceName", "scores", "get_my_profile", {})
-
-  console.log('sbe: ',shouldBeEmpty)
-  // Wait for all network activity to settle
   await s.consistency()
+  const result2 = await alice.call(
+    "scores",
+    "scores",
+    "get_my_profile",
+    {}
+  );
+  t.ok(result2.Ok);
+  t.isEqual("hector0513", t.Ok.name)
 
+});
 
-  // check for equality of the actual and expected results
-  // t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
-})
-
-orchestrator.run()
+orchestrator.run();
