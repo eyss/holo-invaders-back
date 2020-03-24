@@ -61,7 +61,7 @@ orchestrator.registerScenario("create fligth segment", async (s, t) => {
     {}
   );
   t.ok(result2.Ok);
-  t.isEqual("hector0513", t.Ok.name)
+  t.isEqual("hector0513", result2.Ok.name)
 
 });
 

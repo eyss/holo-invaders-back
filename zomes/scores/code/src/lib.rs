@@ -224,7 +224,7 @@ mod scores {
     #[zome_fn("hc_public")]
     fn get_my_profile() -> ZomeApiResult<Profile> {
         //fetch profile linked from the agent address
-        let mut res = hdk::utils::get_links_and_load_type(
+        let mut res = hdk::utils::get_links_and_load_type::<Profile>(
             &AGENT_ADDRESS,
             LinkMatch::Exactly("agent->profile"),
             LinkMatch::Any,
