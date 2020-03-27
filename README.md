@@ -21,13 +21,21 @@ The data structures the system works with are:
         name: String,
     }
     
+    pub struct FullProfile {
+        name: String,
+        address: Address,
+    }
+
     pub struct Score {
         content: String,
+        message: String,
+        author_address: Address,
     }
 
     pub struct AmpedScore {
-        content: String,
-        author_address: String,
+        score: String,
+        message: String,
+        author_address: Address,
         author_username: String,
     }
 ```
