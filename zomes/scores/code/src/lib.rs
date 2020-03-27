@@ -44,7 +44,7 @@ impl Profile {
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Score {
-    score: String,
+    score: i32,
     message: String,
     author_address: Address,
 }
@@ -57,7 +57,7 @@ impl Score {
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct AmpedScore {
-    score: String,
+    score: i32,
     message: String,
     author_address: Address,
     author_username: String,
@@ -216,7 +216,7 @@ mod scores {
         Ok(result)
     }
     #[zome_fn("hc_public")]
-    fn publish_score(score: String, message: String) -> ZomeApiResult<bool> {
+    fn publish_score(score: i32, message: String) -> ZomeApiResult<bool> {
         // upload a score, link from the anchor and link from the user
         let score = Score {
             score,
