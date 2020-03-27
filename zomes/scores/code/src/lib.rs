@@ -30,6 +30,11 @@ use hdk_proc_macros::zome;
 pub struct Profile {
     name: String,
 }
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub struct FullProfile {
+    name: String,
+    address: Address,
+}
 
 impl Profile {
     fn entry(self) -> Entry {
@@ -39,7 +44,7 @@ impl Profile {
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Score {
-    content: String,
+    score: String,
     message: String,
     author_address: Address,
 }
@@ -52,7 +57,7 @@ impl Score {
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct AmpedScore {
-    content: String,
+    score: String,
     message: String,
     author_address: Address,
     author_username: String,
@@ -174,6 +179,19 @@ mod scores {
         )
     }
     #[zome_fn("hc_public")]
+    fn get_username(addr: Address) -> ZomeApiResult<String> {
+        let wrapped_profile_array: Vec<Profile> = hdk::utils::get_links_and_load_type(
+            &addr,
+            LinkMatch::Exactly("agent->profile"),
+            LinkMatch::Any,
+        )?;
+        let wrapped_profile = wrapped_profile_array.last();
+        match wrapped_profile {
+            Some(profile) => Ok(profile.name.clone()),
+            None => Err(ZomeApiError::Internal("profile not found".to_string())),
+        }
+    }
+    #[zome_fn("hc_public")]
     fn get_score_details(addr: Address) -> ZomeApiResult<AmpedScore> {
         // get an amped score given a regular score
         let score: Score = hdk::utils::get_as_type(addr)?;
@@ -190,7 +208,7 @@ mod scores {
             }
         };
         let result = AmpedScore {
-            content: score.content.clone(),
+            score: score.score.clone(),
             message: score.message.clone(),
             author_address: score.author_address.clone(),
             author_username: author_profile.name.clone(),
@@ -198,10 +216,10 @@ mod scores {
         Ok(result)
     }
     #[zome_fn("hc_public")]
-    fn publish_score(content: String, message: String) -> ZomeApiResult<bool> {
+    fn publish_score(score: String, message: String) -> ZomeApiResult<bool> {
         // upload a score, link from the anchor and link from the user
         let score = Score {
-            content,
+            score,
             message,
             author_address: AGENT_ADDRESS.clone(),
         };
@@ -219,10 +237,10 @@ mod scores {
         let entry = profile.entry();
         let address = hdk::commit_entry(&entry)?;
         hdk::link_entries(&AGENT_ADDRESS, &address, "agent->profile", "")?;
-        Ok(address)
+        Ok(AGENT_ADDRESS.clone())
     }
     #[zome_fn("hc_public")]
-    fn get_my_profile() -> ZomeApiResult<Profile> {
+    fn get_my_profile() -> ZomeApiResult<FullProfile> {
         //fetch profile linked from the agent address
         let mut res = hdk::utils::get_links_and_load_type::<Profile>(
             &AGENT_ADDRESS,
@@ -231,7 +249,10 @@ mod scores {
         )?;
 
         match res.pop() {
-            Some(profile) => Ok(profile),
+            Some(profile) => Ok(FullProfile {
+                name: profile.name,
+                address: AGENT_ADDRESS.clone(),
+            }),
             None => Err(ZomeApiError::Internal("No profile registered".to_string())),
         }
     }
