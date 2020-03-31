@@ -43,7 +43,7 @@ const config = Config.gen(
 );
 
 
-orchestrator.registerScenario("create fligth segment", async (s, t) => {
+orchestrator.registerScenario("Basic functions", async (s, t) => {
   const { alice } = await s.players({ alice: config }, true);
   const result = await alice.call(
     "scores",
