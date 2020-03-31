@@ -5,20 +5,19 @@ ui_interfaces = []
 
 [[agents]]
 id = 'hc-run-agent'
-keystore_file = 'testAgent'
+keystore_file = './keystore2.key'
 name = 'testAgent'
-public_address = 'HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma'
-test_agent = true
+public_address = 'HcSCIJdu6fttc975tt8Fi8fak3hqBjg7ot4KWs7n83RsV4yeD8xuBaXC565o69r'
 
 [[dnas]]
 file = './dist/holo-invaders-back.dna.json'
-hash = 'QmcWG7wUtju8LrDC71wRd12xrZKTMQxnYogi92CiJ53RF6'
+hash = 'QmXefpxGVZb36HKuoaZoZAAqoWh9RCJGcBCmdnSXLa13Ce'
 id = 'hc-run-dna'
 
 [[instances]]
 agent = 'hc-run-agent'
 dna = 'hc-run-dna'
-id = 'test-instance'
+id = 'invaders'
 
 [instances.storage]
 type = 'memory'
@@ -28,7 +27,7 @@ admin = true
 id = 'websocket-interface'
 
 [[interfaces.instances]]
-id = 'test-instance'
+id = 'invaders'
 
 [interfaces.driver]
 port = 8888
@@ -47,3 +46,6 @@ type = 'cmd'
 [signals]
 consistency = false
 trace = false
+[network]
+type='sim2h'
+    sim2h_url= 'ws://localhost:9000'
