@@ -11,7 +11,7 @@ public_address = 'HcSCIJdu6fttc975tt8Fi8fak3hqBjg7ot4KWs7n83RsV4yeD8xuBaXC565o69
 
 [[dnas]]
 file = './dist/holo-invaders-back.dna.json'
-hash = 'QmWENFjojvC9MdoT8HXzm1E2wNDsTmKqH2dYuc9rgY85nf'
+hash = 'QmScUUvg7vS9JSQojtuUwfpMzvGNtNvPGYWK6V3RAxkarr'
 id = 'hc-run-dna'
 
 [[instances]]
